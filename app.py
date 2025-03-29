@@ -160,5 +160,42 @@ def scrap_data():
         'skipped_video_ids': skipped_videos, 
     })
 
+@app.route('/api/posts', methods=['GET'])
+def get_posts():
+    posts = Post.query.limit(100).all()
+    results = []
+    
+    for post in posts:
+        results.append({
+            "video_id": post.video_id,
+            "title": post.title,
+            "user_nickname": post.user_nickname,
+            "play_count": post.play_count,
+            "comment_count": post.comment_count,
+            "share_count": post.share_count,
+            "create_time": post.create_time.strftime('%Y-%m-%d') if post.create_time else None,
+            "keyword": post.keyword
+        })
+    
+    return jsonify(results)
+
+@app.route('/api/monthly-stats', methods=['GET'])
+def get_monthly_stats():
+    monthly_counts = db.session.query(
+        extract('year', Post.create_time).label('year'),
+        extract('month', Post.create_time).label('month'),
+        func.count(Post.id).label('count')
+    ).filter(Post.create_time.isnot(None)
+    ).group_by('year', 'month'
+    ).order_by('year', 'month').all()
+    
+    result = []
+    for year, month, count in monthly_counts:
+        result.append({
+            "date": f"{int(year)}-{int(month):02d}",
+            "count": count
+        })
+    
+    return jsonify(result)
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
