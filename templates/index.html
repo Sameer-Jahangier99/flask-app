@@ -3,30 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Flask App</title>
+    <title>TikTok Data Explorer</title>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
         h1 {
             color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ccc;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-bottom: none;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .chart-container {
+            width: 100%;
+            height: 400px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to my Flask App</h1>
-    <div id="message"></div>
+    <h1>TikTok Data Explorer</h1>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="openTab('posts-tab')">Posts Data</div>
+        <div class="tab" onclick="openTab('chart-tab')">Monthly Trends</div>
+    </div>
+    
+    <div id="posts-tab" class="tab-content active">
+        <h2>Latest 100 TikTok Posts</h2>
+        <div class="loading" id="posts-loading">Loading posts data...</div>
+        <div class="table-container">
+            <table id="posts-table">
+                <thead>
+                    <tr>
+                        <th>Video ID</th>
+                        <th>Title</th>
+                        <th>Creator</th>
+                        <th>Views</th>
+                        <th>Comments</th>
+                        <th>Shares</th>
+                        <th>Created</th>
+                        <th>Keyword</th>
+                    </tr>
+                </thead>
+                <tbody id="posts-data">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="chart-tab" class="tab-content">
+        <h2>Monthly Video Trends</h2>
+        <div class="loading" id="chart-loading">Loading chart data...</div>
+        <div class="chart-container">
+            <canvas id="monthly-chart"></canvas>
+        </div>
+    </div>
 
     <script>
-        fetch('/hello')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('message').textContent = data.message;
-            })
-            .catch(error => console.error('Error:', error));
+        // Tab functionality
+        function openTab(tabId) {
+            const tabContents = document.getElementsByClassName('tab-content');
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove('active');
+            }
+            
+            const tabs = document.getElementsByClassName('tab');
+            for (let i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="openTab('${tabId}')"]`).classList.add('active');
+            
+            // Load data for the active tab if not already loaded
+            if (tabId === 'posts-tab' && !postsLoaded) {
+                loadPostsData();
+            } else if (tabId === 'chart-tab' && !chartLoaded) {
+                loadChartData();
+            }
+        }
+        
+        // Variables to track if data has been loaded
+        let postsLoaded = false;
+        let chartLoaded = false;
+        let monthlyChart = null;
+        
+        // Load posts data
+        function loadPostsData() {
+            document.getElementById('posts-loading').style.display = 'block';
+            
+            fetch('/api/posts')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('posts-data');
+                    tableBody.innerHTML = '';
+                    
+                    data.forEach(post => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${post.video_id}</td>
+                            <td>${post.title || 'N/A'}</td>
+                            <td>${post.user_nickname || 'Unknown'}</td>
+                            <td>${post.play_count || 0}</td>
+                            <td>${post.comment_count || 0}</td>
+                            <td>${post.share_count || 0}</td>
+                            <td>${post.create_time || 'N/A'}</td>
+                            <td>${post.keyword || 'N/A'}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    document.getElementById('posts-loading').style.display = 'none';
+                    postsLoaded = true;
+                })
+                .catch(error => {
+                    console.error('Error loading posts data:', error);
+                    document.getElementById('posts-loading').textContent = 'Error loading data. Please try again.';
+                });
+        }
+        
+        // Load chart data
+        function loadChartData() {
+            document.getElementById('chart-loading').style.display = 'block';
+            
+            fetch('/api/monthly-stats')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item.date);
+                    const counts = data.map(item => item.count);
+                    
+                    const ctx = document.getElementById('monthly-chart').getContext('2d');
+                    
+                    // Destroy previous chart if it exists
+                    if (monthlyChart) {
+                        monthlyChart.destroy();
+                    }
+                    
+                    monthlyChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Number of Videos',
+                                data: counts,
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Number of Videos'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Month'
+                                    }
+                                }
+                            },
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Monthly Video Count',
+                                    font: {
+                                        size: 16
+                                    }
+                                },
+                                legend: {
+                                    position: 'top'
+                                }
+                            }
+                        }
+                    });
+                    
+                    document.getElementById('chart-loading').style.display = 'none';
+                    chartLoaded = true;
+                })
+                .catch(error => {
+                    console.error('Error loading chart data:', error);
+                    document.getElementById('chart-loading').textContent = 'Error loading chart data. Please try again.';
+                });
+        }
+        
+        // Load posts data when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPostsData();
+        });
     </script>
 </body>
 </html> 
