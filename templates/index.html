@@ -74,6 +74,60 @@
             padding: 20px;
             font-style: italic;
         }
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .pagination-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .pagination-buttons button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .pagination-buttons button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .pagination-buttons select {
+            padding: 8px;
+            border-radius: 4px;
+        }
+        
+        .chart-filter {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .chart-filter label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .chart-filter select {
+            padding: 8px;
+            border-radius: 4px;
+            min-width: 200px;
+        }
     </style>
 </head>
 <body>
@@ -85,7 +139,7 @@
     </div>
     
     <div id="posts-tab" class="tab-content active">
-        <h2>Latest 100 TikTok Posts</h2>
+        <h2>TikTok Posts</h2>
         <div class="loading" id="posts-loading">Loading posts data...</div>
         <div class="table-container">
             <table id="posts-table">
@@ -102,14 +156,38 @@
                     </tr>
                 </thead>
                 <tbody id="posts-data">
-                    <!-- Data will be loaded here -->
+                    <!-- Data will be loaded here. -->
                 </tbody>
             </table>
+        </div>
+        
+        <!-- pagination controls -->
+        <div class="pagination-controls">
+            <div class="pagination-info">
+                Showing <span id="current-page">1</span> of <span id="total-pages">1</span> pages
+                (<span id="total-posts">0</span> total posts)
+            </div>
+            <div class="pagination-buttons">
+                <button id="prev-page" disabled>Previous</button>
+                <button id="next-page" disabled>Next</button>
+                <select id="per-page-select">
+                    <option value="10">10 per page</option>
+                    <option value="25">25 per page</option>
+                    <option value="50">50 per page</option>
+                    <option value="100">100 per page</option>
+                </select>
+            </div>
         </div>
     </div>
     
     <div id="chart-tab" class="tab-content">
         <h2>Monthly Video Trends</h2>
+        <div class="chart-filter">
+            <label for="keyword-filter">Filter by keyword:</label>
+            <select id="keyword-filter">
+                <option value="all">All Keywords</option>
+            </select>
+        </div>
         <div class="loading" id="chart-loading">Loading chart data...</div>
         <div class="chart-container">
             <canvas id="monthly-chart"></canvas>
@@ -135,8 +213,14 @@
             // Load data for the active tab if not already loaded
             if (tabId === 'posts-tab' && !postsLoaded) {
                 loadPostsData();
-            } else if (tabId === 'chart-tab' && !chartLoaded) {
-                loadChartData();
+            } else if (tabId === 'chart-tab') {
+                if (!keywordsLoaded) {
+                    loadKeywords();
+                    keywordsLoaded = true;
+                }
+                if (!chartLoaded) {
+                    loadChartData();
+                }
             }
         }
         
@@ -144,18 +228,40 @@
         let postsLoaded = false;
         let chartLoaded = false;
         let monthlyChart = null;
+        let keywordsLoaded = false;
         
-        // Load posts data
-        function loadPostsData() {
+        // Variables to track pagination state
+        let currentPage = 1;
+        let perPage = 10;
+        let totalPages = 1;
+        let totalPosts = 0;
+        
+        // Load posts data with pagination
+        function loadPostsData(page = 1, perPage = 10) {
             document.getElementById('posts-loading').style.display = 'block';
             
-            fetch('/api/posts')
+            fetch(`/api/posts?page=${page}&per_page=${perPage}`)
                 .then(response => response.json())
                 .then(data => {
                     const tableBody = document.getElementById('posts-data');
                     tableBody.innerHTML = '';
                     
-                    data.forEach(post => {
+                    // Update pagination variables
+                    currentPage = data.pagination.page;
+                    totalPages = data.pagination.pages;
+                    totalPosts = data.pagination.total;
+                    
+                    // Update pagination display
+                    document.getElementById('current-page').textContent = currentPage;
+                    document.getElementById('total-pages').textContent = totalPages;
+                    document.getElementById('total-posts').textContent = totalPosts;
+                    
+                    // Enable/disable pagination buttons
+                    document.getElementById('prev-page').disabled = !data.pagination.has_prev;
+                    document.getElementById('next-page').disabled = !data.pagination.has_next;
+                    
+                    // Populate the table
+                    data.results.forEach(post => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${post.video_id}</td>
@@ -179,11 +285,36 @@
                 });
         }
         
-        // Load chart data
-        function loadChartData() {
+        // Load keywords for filter
+        function loadKeywords() {
+            fetch('/api/keywords')
+                .then(response => response.json())
+                .then(keywords => {
+                    const keywordFilter = document.getElementById('keyword-filter');
+                    
+                    // Clear existing options except the first one (All Keywords)
+                    while (keywordFilter.options.length > 1) {
+                        keywordFilter.remove(1);
+                    }
+                    
+                    // Add keywords to dropdown
+                    keywords.forEach(keyword => {
+                        const option = document.createElement('option');
+                        option.value = keyword;
+                        option.textContent = keyword;
+                        keywordFilter.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading keywords:', error);
+                });
+        }
+        
+        // Load chart data with keyword filter
+        function loadChartData(keyword = 'all') {
             document.getElementById('chart-loading').style.display = 'block';
             
-            fetch('/api/monthly-stats')
+            fetch(`/api/monthly-stats${keyword !== 'all' ? `?keyword=${keyword}` : ''}`)
                 .then(response => response.json())
                 .then(data => {
                     const labels = data.map(item => item.date);
@@ -195,6 +326,11 @@
                     if (monthlyChart) {
                         monthlyChart.destroy();
                     }
+                    
+                    
+                    const chartTitle = keyword !== 'all' 
+                        ? `Monthly Video Count for "${keyword}"`
+                        : 'Monthly Video Count (All Keywords)';
                     
                     monthlyChart = new Chart(ctx, {
                         type: 'bar',
@@ -229,7 +365,7 @@
                             plugins: {
                                 title: {
                                     display: true,
-                                    text: 'Monthly Video Count',
+                                    text: chartTitle,
                                     font: {
                                         size: 16
                                     }
@@ -250,9 +386,35 @@
                 });
         }
         
-        // Load posts data when the page loads
+        // Set up event listeners for pagination controls
         document.addEventListener('DOMContentLoaded', function() {
-            loadPostsData();
+            loadPostsData(currentPage, perPage);
+            
+            // Previous page button
+            document.getElementById('prev-page').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    loadPostsData(currentPage - 1, perPage);
+                }
+            });
+            
+            // Next page button
+            document.getElementById('next-page').addEventListener('click', function() {
+                if (currentPage < totalPages) {
+                    loadPostsData(currentPage + 1, perPage);
+                }
+            });
+            
+            // Per page select
+            document.getElementById('per-page-select').addEventListener('change', function() {
+                perPage = parseInt(this.value);
+                loadPostsData(1, perPage); // Reset to first page when changing items per page
+            });
+            
+            // Add event listener for keyword filter changes
+            document.getElementById('keyword-filter').addEventListener('change', function() {
+                const selectedKeyword = this.value;
+                loadChartData(selectedKeyword);
+            });
         });
     </script>
 </body>

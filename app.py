@@ -162,10 +162,17 @@ def scrap_data():
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
-    posts = Post.query.limit(100).all()
-    results = []
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
     
-    for post in posts:
+    # Get total count for pagination
+    total_posts = Post.query.count()
+    
+    # Get paginated posts
+    posts = Post.query.order_by(Post.create_time.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    
+    results = []
+    for post in posts.items:
         results.append({
             "video_id": post.video_id,
             "title": post.title,
@@ -177,17 +184,51 @@ def get_posts():
             "keyword": post.keyword
         })
     
-    return jsonify(results)
+    # Return pagination metadata along with results
+    return jsonify({
+        'results': results,
+        'pagination': {
+            'total': total_posts,
+            'pages': posts.pages,
+            'page': page,
+            'per_page': per_page,
+            'has_next': posts.has_next,
+            'has_prev': posts.has_prev
+        }
+    })
+
+@app.route('/api/keywords', methods=['GET'])
+def get_keywords():
+    # Get distinct keywords from the database
+    keywords = db.session.query(Post.keyword).distinct().filter(Post.keyword.isnot(None)).all()
+    keyword_list = []
+    for k in keywords:
+        keyword = k[0]
+        # Only add non-empty keywords
+        if keyword and keyword.strip():
+            keyword_list.append(keyword)
+    
+    # Sort keywords alphabetically
+    keyword_list.sort()
+
+    return jsonify(keyword_list)
 
 @app.route('/api/monthly-stats', methods=['GET'])
 def get_monthly_stats():
-    monthly_counts = db.session.query(
+    keyword = request.args.get('keyword', None)
+    
+    # Base query
+    query = db.session.query(
         extract('year', Post.create_time).label('year'),
         extract('month', Post.create_time).label('month'),
         func.count(Post.id).label('count')
-    ).filter(Post.create_time.isnot(None)
-    ).group_by('year', 'month'
-    ).order_by('year', 'month').all()
+    ).filter(Post.create_time.isnot(None))
+    
+    # keyword filter if provided
+    if keyword and keyword != 'all':
+        query = query.filter(Post.keyword == keyword)
+    
+    monthly_counts = query.group_by('year', 'month').order_by('year', 'month').all()
     
     result = []
     for year, month, count in monthly_counts:
@@ -197,5 +238,6 @@ def get_monthly_stats():
         })
     
     return jsonify(result)
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
