@@ -207,3 +207,6 @@ This test checks if our app can:
 
 If everything works right, the test prints: "Test passed! The all_posts.append function works correctly!"
 
+### Live Links:
+Website: https://flask-app-jsl7.onrender.com/
+Presentation URL: https://docs.google.com/presentation/d/17KeCPIES9Zf3lQfr63Sgv73-eoyVNdI5A7HXzOanA0k/edit?usp=sharing
