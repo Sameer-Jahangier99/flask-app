@@ -153,6 +153,7 @@
                         <th>Shares</th>
                         <th>Created</th>
                         <th>Keyword</th>
+                        <th>Video Link</th>
                     </tr>
                 </thead>
                 <tbody id="posts-data">
@@ -272,6 +273,8 @@
                             <td>${post.share_count || 0}</td>
                             <td>${post.create_time || 'N/A'}</td>
                             <td>${post.keyword || 'N/A'}</td>
+                      
+                            <td><a href="https://www.tiktok.com/@${post.user_nickname}/video/${post.video_id}" target="_blank">View Video</a></td>
                         `;
                         tableBody.appendChild(row);
                     });
