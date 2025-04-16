@@ -71,7 +71,7 @@ def scrap_data():
     max_posts = request.args.get('max_posts', 200, type=int)
     is_save_to_db = request.args.get('is_save_to_db', False, type=bool)
 
-    publish_time = 180
+    publish_time = 0
     sort = 0
     has_more_posts = True
     cursor = 0
@@ -237,6 +237,7 @@ def get_monthly_stats():
             "count": count
         })
     
+    print('result==>', result)
     return jsonify(result)
 
 if __name__ == '__main__':

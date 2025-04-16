@@ -178,6 +178,9 @@ The HTML templates and frontend Html, CSS, JavaScript logic were developed with 
 ### Learning Resources
   Chart.js -  ["Chart.js: Step-by-step guide"](https://www.chartjs.org/docs/latest/getting-started/usage.html)
   Medium - ["Python Flask: A Comprehensive Guide from Basic to Advanced"](https://medium.com/@moraneus/python-flask-a-comprehensive-guide-from-basic-to-advanced-fbc6ec9aa5f7) by Ran Moran on Medium
+  SQLAlchemy - ["SQLAlchemy ORM"](https://flask-sqlalchemy.readthedocs.io/en/stable/)
+  RapidAPI - ["TikTok Video No Watermark API"](https://rapidapi.com/yi005/api/tiktok-video-no-watermark2/playground/apiendpoint_ab376711-012b-4585-ad5f-d0d957ac7b7c)
+  Unittest - ["Patch Mock for testing"](https://docs.python.org/3/library/unittest.mock.html)
 
 ### APIs and Services
 - TikTok data is collected using the TikTok Video No Watermark API via RapidAPI
