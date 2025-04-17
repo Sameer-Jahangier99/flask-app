@@ -182,6 +182,9 @@ The HTML templates and frontend Html, CSS, JavaScript logic were developed with 
   RapidAPI - ["TikTok Video No Watermark API"](https://rapidapi.com/yi005/api/tiktok-video-no-watermark2/playground/apiendpoint_ab376711-012b-4585-ad5f-d0d957ac7b7c)
   Unittest - ["Patch Mock for testing"](https://docs.python.org/3/library/unittest.mock.html)
 
+### Acknowledgements
+  Frontend - Had assistance from AI tools GPT.
+
 ### APIs and Services
 - TikTok data is collected using the TikTok Video No Watermark API via RapidAPI
 - The application is deployed on Render with PostgreSQL database services
