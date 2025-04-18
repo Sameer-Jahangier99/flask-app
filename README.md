@@ -117,6 +117,8 @@ The `Post` model schema includes the following key fields:
 - `comment_count`: Integer, number of comments
 - `share_count`: Integer, number of shares
 - `download_count`: Integer, number of downloads
+- `engagement_rate`: Float, percentage of user engagement (comments + shares divided by views)
+- `is_shareable`: Boolean, indicates if the video has high engagement potential
 
 ### Creator Information
 - `user_id`: Text, TikTok user ID of the creator
@@ -132,6 +134,31 @@ The `Post` model schema includes the following key fields:
 
 ### Data Collection Process
 The application uses the TikTok Video No Watermark API via RapidAPI to fetch video data. The API supports pagination through cursor-based navigation, allowing the application to collect large datasets. Videos are collected based on search keywords and can be filtered by publish time and sort type.
+
+
+### Engagement Stats
+
+### Is Your Video "Shareable"?
+
+Think of engagement rate as your video's conversation starter score. It's pretty straightforward:
+
+* Take comments + shares 
+* Divide by how many people watched
+* you've got a percentage 
+
+ Say your  video got 50 comments, 150 shares and 10,000 views:
+(50+150)÷10,000 = 0.02 or 2%
+
+A 2% rate means people are not just watching - they are actually doing something about it.
+
+### The "Shareable" Badge
+
+I will add a "shareable" tag on videos in either of these ways:
+
+* Engagement rate over 0.5% 
+* Or 10,000+ views 
+
+
 
 ### Database Integration
 - The application uses SQLAlchemy ORM to interact with a PostgreSQL database
@@ -183,7 +210,7 @@ The HTML templates and frontend Html, CSS, JavaScript logic were developed with 
   Unittest - ["Patch Mock for testing"](https://docs.python.org/3/library/unittest.mock.html)
 
 ### Acknowledgements
-  Frontend - Had assistance from AI tools GPT.
+  Frontend - Had assistance from AI tools GPT. Functions: (openTab, loadPostsData, loadChartData, loadKeywords) and the HTML, CSS code were developed with assistance from AI GPT.
 
 ### APIs and Services
 - TikTok data is collected using the TikTok Video No Watermark API via RapidAPI
@@ -216,3 +243,6 @@ If everything works right, the test prints: "Test passed! The all_posts.append f
 ### Live Links:
 Website: https://flask-app-jsl7.onrender.com/
 Presentation URL: https://docs.google.com/presentation/d/17KeCPIES9Zf3lQfr63Sgv73-eoyVNdI5A7HXzOanA0k/edit?usp=sharing
+
+### Notes:
+The Databased I'm usig with this application is on free instance of render and render provides one month of freee instance for database so this db will be available till may 1st 2025, if you need the db beyond this date I can purchase the subscription do let me know. (sameerjahangir99@gmail.com)

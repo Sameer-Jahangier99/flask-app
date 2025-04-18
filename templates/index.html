@@ -128,6 +128,21 @@
             border-radius: 4px;
             min-width: 200px;
         }
+        
+        .shareable-badge {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .engagement-rate {
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -153,6 +168,7 @@
                         <th>Shares</th>
                         <th>Created</th>
                         <th>Keyword</th>
+                        <th>Engagement</th>
                         <th>Video Link</th>
                     </tr>
                 </thead>
@@ -264,6 +280,12 @@
                     // Populate the table
                     data.results.forEach(post => {
                         const row = document.createElement('tr');
+                        
+                        // Create shareable badge HTML if needed
+                        const shareableBadge = post.is_shareable 
+                            ? '<span class="shareable-badge">Shareable</span>' 
+                            : '';
+                            
                         row.innerHTML = `
                             <td>${post.video_id}</td>
                             <td>${post.title || 'N/A'}</td>
@@ -273,7 +295,7 @@
                             <td>${post.share_count || 0}</td>
                             <td>${post.create_time || 'N/A'}</td>
                             <td>${post.keyword || 'N/A'}</td>
-                      
+                            <td><span class="engagement-rate">${post.engagement_rate || 0}%</span>${shareableBadge}</td>
                             <td><a href="https://www.tiktok.com/@${post.user_nickname}/video/${post.video_id}" target="_blank">View Video</a></td>
                         `;
                         tableBody.appendChild(row);

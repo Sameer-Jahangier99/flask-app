@@ -41,6 +41,8 @@ class Post(db.Model):
     download_count = db.Column(db.Integer)
     is_live = db.Column(db.Boolean, default=False)
     is_ad = db.Column(db.Boolean, default=False)
+    is_shareable = db.Column(db.Boolean, default=False)
+    engagement_rate = db.Column(db.Float, default=0.0)
     mentioned_users_ids = db.Column(db.JSON)
     user_id = db.Column(db.Text)
     user_unique_id = db.Column(db.Text)
@@ -98,6 +100,21 @@ def scrap_data():
 
         for video in videos:
             try:
+                # Calculate if post is shareable based on engagement metrics
+                play_count = video.get('play_count', 0)
+                comment_count = video.get('comment_count', 0)
+                share_count = video.get('share_count', 0)
+                
+                # Prevent division by zero
+                engagement_rate = 0
+                if play_count > 0:
+                    engagement_rate = (comment_count + share_count) / play_count
+                
+                # A post is considered shareable if:
+                # 1. It has high engagement rate (>0.5%) OR
+                # 2. It has very high view count (>100000)
+                is_shareable = (engagement_rate > 0.005) or (play_count > 100000)
+                
                 all_posts.append({
                     "video_id": video.get('video_id'),
                     "region": video.get('region'),
@@ -107,13 +124,15 @@ def scrap_data():
                     "duration": video.get('duration', 0),
                     "video_link": video.get('video_link'),
                     "size": video.get('size', 0),
-                    "play_count": video.get('play_count', 0),
-                    "comment_count": video.get('comment_count', 0),
-                    "share_count": video.get('share_count', 0),
+                    "play_count": play_count,
+                    "comment_count": comment_count,
+                    "share_count": share_count,
                     "create_time": datetime.utcfromtimestamp(video.get('create_time', 0)) if video.get('create_time') else None,
                     "download_count": video.get('download_count', 0),
                     "is_live": video.get('is_live', False),
                     "is_ad": video.get('is_ad', False),
+                    "is_shareable": is_shareable,
+                    "engagement_rate": round(engagement_rate * 100, 2),  # Store as percentage with 2 decimal places
                     "mentioned_users_ids": video.get('mentioned_users_ids', []),
                     "user_id": video.get('author', {}).get('id'),
                     "user_unique_id": video.get('author', {}).get('unique_id'),
@@ -181,7 +200,10 @@ def get_posts():
             "comment_count": post.comment_count,
             "share_count": post.share_count,
             "create_time": post.create_time.strftime('%Y-%m-%d') if post.create_time else None,
-            "keyword": post.keyword
+            "keyword": post.keyword,
+            "is_shareable": post.is_shareable,
+            "engagement_rate": post.engagement_rate,
+            "is_shareable": post.is_shareable
         })
     
     # Return pagination metadata along with results
